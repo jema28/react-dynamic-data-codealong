@@ -1,68 +1,234 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# React with dynamic data code along for Founders & Coders
 
-## Available Scripts
+In this code along we'll fetch some data from an API and then render it (one of the most common usecases for React in modern frontend).
 
-In the project directory, you can run:
+## Set up
 
-### `npm start`
+1. Clone the repo
+1. `cd react-dynamic-data-workshop`
+1. `npm i`
+1. `npm start`
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Getting an access token
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+Next you'll need a GitHub auth token so you won't get rate limited!
 
-### `npm test`
+Go to: `Settings > Developer Settings > Personal access tokens > Generate new token`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+For this workshop you'll need to select `repo` and `user` scopes. When you get your access token remember to save it somewhere (but don't put it on GitHub). For example, create a file called `token.js` (already in the `.gitignore`) in the root of the workshop folder and put your token there.
 
-### `npm run build`
+```javascript
+export const token = 'yourAccessToken'
+```
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+What are we building? A GitHub card with our avatar, username, and list of link of repos:
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+![](./github-card.png)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Walktrough
 
-### `npm run eject`
+Let's start by thinking of our file structure and skeleton code for our index.js and App.js. Our user card will have into two top level class components (so we can access state and lifecycle methods). Based on our design these two top level components will be:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+1.  `<UserHeader/>` with our Github avatar and username
+2.  `<RepoList/>`, a lists of our repositories with names and links. Our `<RepoList>` will return individual `<Repo>` components.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+public
+--- index.html
+src
+--- components
+------ App
+---------index.js
+------ Repo
+---------index.js
+------ RepoList
+---------index.js
+------ UserHeader
+---------index.css
+---------index.js
+--- utils
+------ fetch_data.js
+--- index.js
+--- token.js
+package.json
+.gitignore
+README.md
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+In our index.js we import React, ReactDOM, App and render it onto the page.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import App from './components/App'
 
-## Learn More
+ReactDOM.render(<App />, document.getElementById('root'))
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+In App.js:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```js
+import React from 'react'
+import UserHeader from '../UserHeader'
+import RepoList from '../RepoList'
 
-### Code Splitting
+const App = () => (
+  <div>
+    <UserHeader />
+    <RepoList />
+  </div>
+)
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+export default App
+```
 
-### Analyzing the Bundle Size
+Note: You can read more about stateless vs. stateful components [here](https://code.tutsplus.com/tutorials/stateful-vs-stateless-functional-components-in-react--cms-29541))
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+### Creating UserHeader and getting the data
 
-### Making a Progressive Web App
+In `UserHeader/index.js` we want to initialise our UserData set to null and render a simple p tag to check our component is rendering.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+```js
+import React, { Component } from 'react'
 
-### Advanced Configuration
+class UserHeader extends Component {
+  state = { userData: null }
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+  render() {
+    const { userData } = this.state
+    return (
+      <>
+        <p>UserHeader</p>
+      </>
+    )
+  }
+}
 
-### Deployment
+export default UserHeader
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+Next let's write our getData function in a utils folder (to keep functionality separate). In `utils/fetch_data.js`, write our fetch method:
 
-### `npm run build` fails to minify
+```js
+export const getData = url =>
+  fetch(url)
+    .then(response => response.json())
+    .catch(error => console.log(`Fetch data failed with ${error}`))
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+We then use this function in the componentDidMount lifecycle method, passing in the Github API url, token and username from token.js. Once we get the data we need to set the initial state to the new userData:
+
+```js
+import React, { Component } from 'react'
+import { getData } from '../../utils/fetch_data'
+import { username, token } from '../../token'
+
+class UserHeader extends Component {
+  state = { userData: null }
+
+  componentDidMount() {
+    getData(
+      `https://api.github.com/users/${username}?access_token=${token}`
+    ).then(userData => {
+      console.log('userheader', userData)
+      this.setState({ userData })
+    })
+  }
+  render() {
+    const { userData } = this.state
+    return (
+      <>
+        <p>UserHeader</p>
+      </>
+    )
+  }
+}
+
+export default UserHeader
+```
+
+Now let's use this data:
+
+```js
+render() {
+  const { userData } = this.state
+  return (
+    <>
+      {!userData ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="UserHeader">
+          <img className="image" src={userData.avatar_url} alt="profile" />
+          <h2>{userData.login}</h2>
+        </div>
+      )}
+    </>
+  )
+}
+```
+
+The reason we add a conditional render is that data over network gets to us slower than DOM renders content. We need to provide a loading state so we're not trying to render content that is not there yet.
+
+### Creating your repo list component
+
+Next we'll create our `<RepoList/>` component in the same way (with a slightly different url).
+
+```js
+import React, { Component } from 'react'
+import Repo from './src/components/Repo'
+import { getData } from '../../utils/fetch_data'
+import { username, token } from '../../token'
+
+class RepoList extends Component {
+  state = { repos: null }
+
+  componentDidMount() {
+    getData(
+      `https://api.github.com/users/${username}/repos?access_token=${token}`
+    ).then(repos => {
+      console.log('repos', repos)
+      this.setState({ repos })
+    })
+  }
+
+  render() {
+    const { repos } = this.state
+    return (
+      <>
+        {!repos ? (
+          <p>Loading...</p>
+        ) : (
+          <div>
+            <h3>Repo List</h3>
+            <ul>
+              {repos.map(repo => (
+                <Repo key={repo.id} {...repo} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </>
+    )
+  }
+}
+
+export default RepoList
+```
+
+^ All dynamically rendered components like our `Repo` here need a `key` prop so React can keep track of the correct elements being added/removed from the DOM.
+
+When we render, a very common pattern is to create a functional component for the data that you want to render, map over your data dynamically create a list of these components.
+
+```js
+import React from 'react'
+
+const Repo = ({ name, html_url }) => (
+  <li>
+    <a href={html_url}>{name}</a>
+  </li>
+)
+
+export default Repo
+```
+
+We're done, great job! :sparkles:
