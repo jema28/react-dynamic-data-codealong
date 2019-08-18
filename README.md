@@ -1,6 +1,6 @@
 # React with dynamic data code along for Founders & Coders
 
-In this code along we'll fetch some data from an API and then render it (one of the most common usecases for React in modern frontend).
+In this code along we'll fetch some data from an API and then render it (one of the most common usecases for React in modern frontend). This workshop is based on @sofiapoh's [React Dynamic Data workshop for FAC](https://github.com/sofiapoh/react-dynamic-data-workshop).
 
 ## Set up
 
